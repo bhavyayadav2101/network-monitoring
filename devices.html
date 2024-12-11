@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Devices - Network Monitoring</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Common Styles */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f8ff;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: #fff;
+            padding: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            font-size: 1.5em;
+            color: #333;
+            margin: 0;
+        }
+
+        header .status {
+            font-size: 0.9em;
+            color: #999;
+        }
+
+        main {
+            padding: 20px;
+        }
+
+        .section {
+            background-color: #fff;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .section h2 {
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .section h2 i {
+            margin-right: 10px;
+            color: #007acc;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        li {
+            background-color: #e6f7ff;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .device-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .device-info span {
+            font-weight: bold;
+        }
+
+        .bottom-menu {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background-color: #fff;
+            box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+        }
+
+        .bottom-menu a {
+            color: #007acc;
+            text-decoration: none;
+            text-align: center;
+            font-size: 0.8em;
+        }
+
+        .bottom-menu a i {
+            display: block;
+            font-size: 1.5em;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div>
+            <h1>Network Monitoring</h1>
+            <div class="status">Devices</div>
+        </div>
+    </header>
+
+    <main>
+        <div id="deviceCount" class="section">
+            <h2><i class="fas fa-network-wired"></i> Number of Devices Connected:</h2>
+            <ul id="deviceCountList">
+                <li>Loading...</li>
+            </ul>
+        </div>
+
+        <div id="routerStatus" class="section">
+            <h2><i class="fas fa-server"></i> Router Connection:</h2>
+            <ul id="routerStatusList">
+                <li>Loading...</li>
+            </ul>
+        </div>
+
+        <div id="wifiStatus" class="section">
+            <h2><i class="fas fa-wifi"></i> Connected Wi-Fi Network:</h2>
+            <ul id="wifiStatusList">
+                <li>Loading...</li>
+            </ul>
+        </div>
+
+        <div id="devicesList" class="section">
+            <h2><i class="fas fa-desktop"></i> Connected Devices:</h2>
+            <ul id="devices">
+                <li>Loading...</li>
+            </ul>
+        </div>
+    </main>
+
+    <nav class="bottom-menu">
+        <a href="/devices_page"><i class="fas fa-home"></i>Devices</a>
+        <a href="/network_page"><i class="fas fa-network-wired"></i>Network</a>
+        <a href="/security_page"><i class="fas fa-lock"></i>Security</a>
+    </nav>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('/devices')
+                .then(response => response.json())
+                .then(data => {
+                    // Update device count
+                    const deviceCountList = document.getElementById('deviceCountList');
+                    deviceCountList.innerHTML = `<li>ARP Devices: ${data.connected_devices.filter(device => device.type === 'ARP Device').length}</li>
+                                                <li>WiFi Hotspots: ${data.connected_devices.filter(device => device.type === 'WiFi Hotspot').length}</li>
+                                                <li>Router: ${data.connected_devices.filter(device => device.type === 'Router').length}</li>
+                                                <li>Connected WiFi: ${data.connected_devices.filter(device => device.type === 'Connected WiFi').length > 0 ? data.connected_devices.filter(device => device.type === 'Connected WiFi')[0].name : 'Not Connected'}</li>`;
+
+                    // Update router status
+                    const routerStatusList = document.getElementById('routerStatusList');
+                    const routerConnected = data.connected_devices.some(device => device.type === 'Router');
+                    routerStatusList.innerHTML = `<li>${routerConnected ? 'Connected' : 'Not Connected'}</li>`;
+
+                    // Update connected WiFi network
+                    const wifiStatusList = document.getElementById('wifiStatusList');
+                    const connectedWifi = data.connected_devices.find(device => device.type === 'Connected WiFi');
+                    wifiStatusList.innerHTML = `<li>${connectedWifi ? connectedWifi.name : 'Not Connected'}</li>`;
+
+                    // Update devices list
+                    const devicesList = document.getElementById('devices');
+                    devicesList.innerHTML = ''; // Clear previous list
+
+                    data.connected_devices.forEach(device => {
+                        const listItem = document.createElement('li');
+                        listItem.innerHTML = `
+                            <div class="device-info"><span>Type:</span> ${device.type}</div>
+                            ${device.ip_address ? `<div class="device-info"><span>IP Address:</span> ${device.ip_address}</div>` : ''}
+                            ${device.mac_address ? `<div class="device-info"><span>MAC Address:</span> ${device.mac_address}</div>` : ''}
+                            ${device.ssid ? `<div class="device-info"><span>SSID:</span> ${device.ssid}</div>` : ''}
+                            ${device.bssid ? `<div class="device-info"><span>BSSID:</span> ${device.bssid}</div>` : ''}
+                            <div class="device-info"><span>Name:</span> ${device.name || 'Unknown'}</div>
+                        `;
+                        devicesList.appendChild(listItem);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                });
+        });
+    </script>
+</body>
+</html>
